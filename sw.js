@@ -27,8 +27,22 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  // Debug log (görmek için DevTools -> Console)
+  // Belli istekleri doğrudan ağdan çek (ör. manifest), diğerlerini cache-first yap
+  const req = event.request;
+  if (req.url.endsWith('manifest.json') || req.destination === 'manifest') {
+    event.respondWith(
+      fetch(req).then(networkRes => {
+        // isteği cache'e kaydet
+        caches.open(CACHE_NAME).then(cache => cache.put(req, networkRes.clone()));
+        return networkRes;
+      }).catch(() => caches.match(req))
+    );
+    return;
+  }
+
   event.respondWith(
-    caches.match(event.request)
-      .then((response) => response || fetch(event.request))
+    caches.match(req)
+      .then((response) => response || fetch(req))
   );
 });
